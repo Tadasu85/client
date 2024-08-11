@@ -1,51 +1,61 @@
-
+/**
+ * Enum representing the type of transaction database.
+ */
 export enum TransactionDbType {
-    null,
-    input,
-    output,
-    virtual,
-    core,
-    anchor_ref,
-}
-
-
-export enum TransactionIntent {
-    'money.spend' = 'money.spend'
-}
-
-export interface SignatureContainer {
-    __t: 'vsc-sig',
-    sigs: Array<{
-        alg: string
-        kid: string
-        sig: string
-    }>
+  null,
+  input,
+  output,
+  virtual,
+  core,
+  anchor_ref,
 }
 
 /**
- * Offchain transaction format
- */
-export interface TransactionContainerV2 {
-    __t: 'vsc-tx'
-    __v: '0.2'
-    headers: {
-        payer?: string
-        lock_block?: number
-        expire_block?: number
-        nonce?: number
-        required_auths: Array<string>
-        //Tuple of transaction intent enum and arguments as querystring
-        intents?: null | Array<[TransactionIntent, string]> 
-        type: TransactionDbType
-    }
-    tx: {
-      contract_id?: string
-      action?: string
-      op: string
-      payload: any // cid of ContractInput, ContractOutput or ContractUpdate and so on..
-    }
+* Enum representing different transaction intents.
+*/
+export enum TransactionIntent {
+  'money.spend' = 'money.spend'
 }
 
+/**
+* Interface representing a signature container in a transaction.
+*/
+export interface SignatureContainer {
+  __t: 'vsc-sig',
+  sigs: Array<{
+    alg: string
+    kid: string
+    sig: string
+  }>
+}
+
+/**
+* Offchain transaction format.
+*/
+export interface TransactionContainerV2 {
+  __t: 'vsc-tx'
+  __v: '0.2'
+  headers: {
+    payer?: string
+    lock_block?: number
+    expire_block?: number
+    nonce?: number
+    required_auths: Array<string>
+    // Tuple of transaction intent enum and arguments as querystring
+    intents?: null | Array<[TransactionIntent, string]>
+    type: TransactionDbType
+  }
+  tx: {
+    contract_id?: string
+    action?: string
+    op: string
+    payload: any // cid of ContractInput, ContractOutput, or ContractUpdate and so on.
+  }
+}
+
+/**
+* JSON schema for validating transaction objects.
+*/
 export const TxSchema = {
   type: 'object',
   properties: {

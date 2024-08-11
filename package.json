@@ -19,7 +19,8 @@
     "dev": "ts-node-dev src/index.ts",
     "ts-node": "node --experimental-specifier-resolution=node --max-old-space-size=3072 --no-node-snapshot --loader ts-node/esm",
     "lint:fix": "eslint --fix \"src/**/*.{ts,tsx}\"",
-    "lint": "eslint \"src/**/*.{ts,tsx}\""
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "docs": "typedoc"
   },
   "author": "",
   "license": "ISC",
@@ -43,6 +44,7 @@
     "p-queue": "^8.0.1",
     "regtest-client": "^0.2.1",
     "tiny-secp256k1": "^2.2.3",
+    "typedoc": "^0.26.5",
     "web3": "^4.10.0"
   },
   "type": "module",
