@@ -1,4 +1,3 @@
-
 export const submitTxQuery = `
 query SubmitTx($sig: String!, $tx: String!) {
     submitTransactionV1(sig: $sig, tx: $tx) {
