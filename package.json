@@ -9,9 +9,11 @@
     "eslint": "^7.30.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.4.0",
+    "eslint-plugin-unused-imports": "^2.0.0",
     "prettier": "^2.4.1",
     "ts-node": "^10.2.1",
     "ts-node-dev": "^1.1.8",
+    "typedoc": "^0.26.11",
     "typescript": "^5.3.3"
   },
   "scripts": {
@@ -19,7 +21,8 @@
     "dev": "ts-node-dev src/index.ts",
     "ts-node": "node --experimental-specifier-resolution=node --max-old-space-size=3072 --no-node-snapshot --loader ts-node/esm",
     "lint:fix": "eslint --fix \"src/**/*.{ts,tsx}\"",
-    "lint": "eslint \"src/**/*.{ts,tsx}\""
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "docs": "typedoc"
   },
   "author": "",
   "license": "ISC",
