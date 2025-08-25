@@ -7,9 +7,11 @@ const queue = new PQueue({ concurrency: 10 })
 
 const coreSecret = '44ab29dc82f227322cb924cdc66815da8edc9cb0b409f5ced26ced57e6077aa6'
 
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 ;(async () => {
   try {
     for (let i = 0; i < 1; i++) {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       queue.add(async () => {
         const secret = Crypto.createHash('sha256')
           .update(`${coreSecret}-${i}`)
@@ -33,8 +35,10 @@ const coreSecret = '44ab29dc82f227322cb924cdc66815da8edc9cb0b409f5ced26ced57e607
         const addr = account.address
 
         console.log(addr)
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
         await client.loginWithETH(provider, addr, `0x${secret}`)
         const tx = new vTransaction()
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
         tx.setTx({
           op: 'call_contract',
           action: 'testJSON',
@@ -45,6 +49,7 @@ const coreSecret = '44ab29dc82f227322cb924cdc66815da8edc9cb0b409f5ced26ced57e607
         })
         //8 hundred
         for (let j = 0; j < 1; j++) {
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
           await tx.broadcast(client)
         }
       })

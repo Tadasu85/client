@@ -9,8 +9,10 @@ import { base64UrlToUint8Array, convertEIP712Type, getNonce, uint8ArrayToBase64U
 import Web3, { Web3BaseWalletAccount } from 'web3'
 import { hashTypedData, recoverTypedDataAddress, recoverAddress } from 'viem'
 import { encode, decode } from '@ipld/dag-cbor'
+import { AiohaHiveSigner, type AiohaConfig } from './aioha-signer'
 
 export { hexToUint8Array } from './utils'
+export { AiohaHiveSigner, type AiohaConfig } from './aioha-signer'
 
 let hiveClient = new HiveClient('https://api.hive.blog')
 
@@ -84,21 +86,49 @@ export class vTransaction {
       throw new Error('No TX specified!')
     }
     if (client.loginInfo.type === 'hive') {
-      await hiveClient.broadcast.json(
-        {
-          id: 'vsc-tx',
-          required_auths: [client.hiveName],
-          required_posting_auths: [],
-          json: JSON.stringify({
-            __t: 'vsc-tx',
-            __v: '0.1',
-            net_id: 'vsc-mainnet',
-            headers: {},
-            tx: this.txData,
-          }),
-        },
-        PrivateKey.fromString(client.secrets.active || client.secrets.posting),
-      )
+      if (client.loginInfo.provider === 'aioha' && client._aioha) {
+        // Use Aioha for signing and broadcasting
+        const txData: TransactionContainerV2 = {
+          __v: '0.2',
+          __t: 'vsc-tx',
+          headers: {
+            type: TransactionDbType.input,
+            required_auths: [client.hiveName],
+          },
+          tx: this.txData,
+        }
+
+        const result = await client._aioha.signCustomJSON('posting', 'vsc-tx', txData)
+        if (!result.success) {
+          throw new Error(`Aioha signing failed: ${result.error}`)
+        }
+
+        return {
+          id: result.result || null,
+        }
+      } else if (
+        client.loginInfo.provider === 'keychain' ||
+        client.loginInfo.provider === 'direct'
+      ) {
+        // Use traditional KeychainSDK or direct key approach
+        await hiveClient.broadcast.json(
+          {
+            id: 'vsc-tx',
+            required_auths: [client.hiveName],
+            required_posting_auths: [],
+            json: JSON.stringify({
+              __t: 'vsc-tx',
+              __v: '0.1',
+              net_id: 'vsc-mainnet',
+              headers: {},
+              tx: this.txData,
+            }),
+          },
+          PrivateKey.fromString(client.secrets.active || client.secrets.posting),
+        )
+      } else {
+        throw new Error('No valid Hive authentication method available')
+      }
     } else if (client.loginInfo.type === 'offchain') {
       if (!this.cachedNonce) {
         this.cachedNonce = await getNonce(client._did.id, `${client._args.api}/api/v1/graphql`)
@@ -261,19 +291,23 @@ export class vClient {
     posting?: string
     active?: string
   }
-  _keychain: KeychainSDK
+  _keychain: KeychainSDK | null
+  _aioha: AiohaHiveSigner | null
   hiveName: string
   web3: Web3
   loginInfo: {
     wallet?: Web3BaseWalletAccount
     id: any
     type: any
+    provider?: 'keychain' | 'aioha' | 'direct'
   }
 
   constructor(args: vClientArgs) {
     this.loggedIn = false
     this._args = args
     this.secrets = {}
+    this._keychain = null
+    this._aioha = null
 
     this.loginInfo = {
       id: null,
@@ -297,15 +331,24 @@ export class vClient {
 
   async loginWithHive(args: {
     hiveName: string
-    provider: 'hive_keychain' | 'direct'
+    provider: 'hive_keychain' | 'aioha' | 'direct'
     posting?: string
     active?: string
+    aiohaConfig?: AiohaConfig
   }) {
     if (args.provider === 'hive_keychain') {
       if (!(window as any).hive_keychain) {
         throw new Error('Hive keychain not available')
       }
       this._keychain = new KeychainSDK(window)
+      this.loginInfo.provider = 'keychain'
+      this.loggedIn = true
+    } else if (args.provider === 'aioha') {
+      if (!args.aiohaConfig) {
+        throw new Error('Aioha configuration is required when using Aioha provider')
+      }
+      this._aioha = new AiohaHiveSigner(args.aiohaConfig)
+      this.loginInfo.provider = 'aioha'
       this.loggedIn = true
     } else if (args.provider === 'direct') {
       if (!args.posting && !args.active) {
@@ -313,6 +356,7 @@ export class vClient {
       }
       this.secrets.posting = args.posting
       this.secrets.active = args.active
+      this.loginInfo.provider = 'direct'
       this.loggedIn = true
     } else {
       throw new Error('Invalid Provider')
@@ -330,4 +374,43 @@ export class vClient {
   }
 
   async _sign() {}
+
+  /**
+   * Get the Aioha instance if available
+   */
+  getAioha(): AiohaHiveSigner | null {
+    return this._aioha
+  }
+
+  /**
+   * Check if Aioha is available and logged in
+   */
+  isAiohaLoggedIn(): boolean {
+    return this._aioha?.isLoggedIn() || false
+  }
+
+  /**
+   * Get current Aioha user
+   */
+  getAiohaUser(): string | null {
+    return this._aioha?.getCurrentUser() || null
+  }
+
+  /**
+   * Set custom Hive API for Aioha
+   */
+  setAiohaHiveAPI(api: string | string[]): void {
+    if (this._aioha) {
+      this._aioha.setHiveAPI(api)
+    }
+  }
+
+  /**
+   * Listen to Aioha account changes
+   */
+  onAiohaAccountChanged(callback: (username: string | null) => void): void {
+    if (this._aioha) {
+      this._aioha.onAccountChanged(callback)
+    }
+  }
 }

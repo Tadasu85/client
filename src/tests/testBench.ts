@@ -2,6 +2,7 @@ import { Ed25519Provider } from 'key-did-provider-ed25519'
 import { DID } from 'dids'
 import KeyResolver from 'key-did-resolver'
 import { hexToUint8Array, vClient, vTransaction } from '..'
+// eslint-disable-next-line @typescript-eslint/no-floating-promises
 ;(async () => {
   try {
     const client = new vClient({
@@ -15,8 +16,10 @@ import { hexToUint8Array, vClient, vTransaction } from '..'
     const did = new DID({ provider: keyPrivate, resolver: KeyResolver.getResolver() })
     await did.authenticate()
 
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     await client.login(did)
     const tx = new vTransaction()
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     tx.setTx({
       op: 'call_contract',
       action: 'testJSON',
@@ -25,6 +28,7 @@ import { hexToUint8Array, vClient, vTransaction } from '..'
         hello: 'World',
       },
     })
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     await tx.broadcast(client)
   } catch (error) {
     console.error('Test failed:', error)

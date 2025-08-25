@@ -27,6 +27,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aioha/aioha": "^1.7.0",
     "@hiveio/dhive": "^1.2.8",
     "@ipld/dag-cbor": "^9.2.1",
     "ajv": "^6.12.6",
