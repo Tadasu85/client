@@ -20,6 +20,16 @@ export interface SignatureContainer {
 }
 
 /**
+ * EIP712 Typed Data structure for viem functions
+ */
+export interface EIP712TypedData {
+  types: Record<string, unknown>
+  primaryType: string
+  domain: Record<string, unknown>
+  message: Record<string, unknown>
+}
+
+/**
  * Offchain transaction format
  */
 export interface TransactionContainerV2 {

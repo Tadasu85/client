@@ -4,7 +4,7 @@ import { KeychainSDK } from 'keychain-sdk'
 import { encodePayload } from 'dag-jose-utils'
 import Axios from 'axios'
 import { submitTxQuery } from './queries'
-import { TransactionContainerV2, TransactionDbType } from './types'
+import { TransactionContainerV2, TransactionDbType, EIP712TypedData } from './types'
 import { base64UrlToUint8Array, convertEIP712Type, getNonce, uint8ArrayToBase64Url } from './utils'
 import Web3, { Web3BaseWalletAccount } from 'web3'
 import { hashTypedData, recoverTypedDataAddress, recoverAddress } from 'viem'
@@ -114,7 +114,7 @@ export class vTransaction {
         },
         tx: this.txData,
       }
-      const types = convertEIP712Type(txData)
+      const types = convertEIP712Type(txData as unknown as Record<string, unknown>)
 
       this.cachedNonce = this.cachedNonce + 1
 
@@ -181,19 +181,17 @@ export class vTransaction {
         },
         tx: this.txData,
       }
-      const types = convertEIP712Type(decode(encode(txData)))
+      const types = convertEIP712Type(decode(encode(txData)) as unknown as Record<string, unknown>)
 
       console.log(types)
-      const hash = hashTypedData({
-        ...(types as any),
-      })
+      const hash = hashTypedData(types as EIP712TypedData)
       const signature = client.loginInfo.wallet.sign(hash).signature
 
       console.log(
         'recovered address',
         await recoverTypedDataAddress({
-          ...(types as any),
-          signature,
+          ...(types as EIP712TypedData),
+          signature: signature as `0x${string}`,
         }),
         client.web3.eth.accounts.recover(hash, signature),
         await recoverAddress({ hash, signature: signature as any }),
@@ -327,7 +325,7 @@ export class vClient {
     this.web3 = web3
     this.loginInfo.id = address
     this.loginInfo.type = 'evm'
-    this.loginInfo.wallet = web3.eth.accounts.privateKeyToAccount(secret)
+    this.loginInfo.wallet = web3.eth.accounts.privateKeyToAccount(secret as string)
     this.loggedIn = true
   }
 

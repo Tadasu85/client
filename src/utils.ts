@@ -11,7 +11,7 @@ async function createCID(obj) {
   return cid
 }
 
-export function hexToUint8Array(hex) {
+export function hexToUint8Array(hex: string) {
   if (hex.length % 2 !== 0) {
     throw new Error('Hex string must have an even length')
   }
@@ -23,8 +23,8 @@ export function hexToUint8Array(hex) {
 }
 
 export async function convertTxJws(args: { sig: string; tx: string }) {
-  const tx = base64UrlToUint8Array(args.tx)
-  const sigDecoded = dagCBOR.decode(base64UrlToUint8Array(args.sig)) as {
+  const tx = base64UrlToUint8Array(args.tx as string)
+  const sigDecoded = dagCBOR.decode(base64UrlToUint8Array(args.sig as string)) as {
     __t: 'vsc-sig'
     sigs: [
       {
@@ -41,7 +41,7 @@ export async function convertTxJws(args: { sig: string; tx: string }) {
   for (const sigVal of sigDecoded.sigs) {
     jwsDagOutput.push({
       jws: {
-        payload: uint8ArrayToBase64Url(hexToUint8Array(cid.bytes)),
+        payload: uint8ArrayToBase64Url(cid.bytes),
         signatures: [
           {
             protected: uint8ArrayToBase64Url(
@@ -64,7 +64,7 @@ export async function convertTxJws(args: { sig: string; tx: string }) {
 }
 
 export async function getNonce(keyGroup: string, api: string) {
-  const { data } = await Axios.post(api, {
+  const { data } = await Axios.post(api as string, {
     query: `
             query SubmitTx($keyGroup: String!) {
                 getAccountNonce(keyGroup: $keyGroup) {
@@ -92,7 +92,13 @@ function eip712Type(type: string) {
   }
 }
 
-function convertJsTypeToTypedData(a: Record<string, unknown>, prefix?: string) {
+function convertJsTypeToTypedData(
+  a: Record<string, unknown>,
+  prefix?: string,
+): {
+  values: Array<{ name: string; type: string }>
+  types: Array<{ name: string; definition: Array<{ name: string; type: string }> }>
+} {
   const types = []
   const values = []
   if (typeof a === 'object') {
@@ -115,7 +121,7 @@ function convertJsTypeToTypedData(a: Record<string, unknown>, prefix?: string) {
 
           console.log(prefix, key, values, types)
           //Push subtypes
-          types.push(...returnedTypes)
+          types.push(...(returnedTypes as Array<unknown>))
           //Push self type
           types.push({
             name: `${prefix}.${key}`,
@@ -146,14 +152,15 @@ function convertJsTypeToTypedData(a: Record<string, unknown>, prefix?: string) {
           type: eip712Type(typeof a),
         },
       ],
+      types: [],
     }
   }
 }
 
-export function convertEIP712Type(a: any, type = 'tx_container_v0') {
+export function convertEIP712Type(a: Record<string, unknown>, type = 'tx_container_v0') {
   const typedDataPartial = convertJsTypeToTypedData(a, type)
 
-  const obj = {}
+  const obj: Record<string, unknown> = {}
   for (const value of typedDataPartial.types) {
     obj[value.name] = value.definition
   }
@@ -173,12 +180,12 @@ export function convertEIP712Type(a: any, type = 'tx_container_v0') {
   return out
 }
 
-function base64UrlToBase64(base64url) {
+function base64UrlToBase64(base64url: string): string {
   return base64url.replace(/-/g, '+').replace(/_/g, '/')
 }
 
 // Function to decode a base64 string to Uint8Array
-function base64ToUint8Array(base64) {
+function base64ToUint8Array(base64: string): Uint8Array {
   const binaryString = atob(base64)
   const len = binaryString.length
   const bytes = new Uint8Array(len)
@@ -189,16 +196,16 @@ function base64ToUint8Array(base64) {
 }
 
 // Combining the functions to decode a base64 URL-safe string to Uint8Array
-export function base64UrlToUint8Array(base64url) {
+export function base64UrlToUint8Array(base64url: string) {
   const base64 = base64UrlToBase64(base64url)
   return base64ToUint8Array(base64)
 }
 
-export function uint8ArrayToBase64Url(uint8Array) {
+export function uint8ArrayToBase64Url(uint8Array: Uint8Array) {
   // Convert Uint8Array to a binary string
-  const binaryString = String.fromCharCode.apply(null, uint8Array)
+  const binaryString = String.fromCharCode.apply(null, uint8Array as unknown as number[])
   // Encode binary string to base64
-  const base64 = btoa(binaryString)
+  const base64 = btoa(binaryString as string)
   // Convert base64 to base64url by replacing characters
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
