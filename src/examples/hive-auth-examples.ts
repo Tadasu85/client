@@ -1,26 +1,32 @@
 import { vClient, type AiohaConfig } from '../index'
 
 /**
- * Example: Using traditional KeychainSDK authentication
+ * Example: Using Aioha with Keychain provider
  */
-export async function exampleKeychainAuth() {
+export async function exampleAiohaKeychainAuth() {
   const client = new vClient({
     api: 'https://api.vsc.eco',
     loginType: 'hive',
   })
 
+  const aiohaConfig: AiohaConfig = {
+    appName: 'VSC Client',
+    appDescription: 'VSC Network Client with Keychain Support',
+  }
+
   try {
     await client.loginWithHive({
       hiveName: 'your-hive-username',
-      provider: 'hive_keychain',
+      provider: 'keychain',
+      aiohaConfig,
     })
 
-    console.log('Logged in with KeychainSDK:', client.loginInfo.id)
+    console.log('Logged in with Aioha (Keychain):', client.loginInfo.id)
     console.log('Provider:', client.loginInfo.provider)
 
     return client
   } catch (error) {
-    console.error('KeychainSDK login failed:', error)
+    console.error('Aioha Keychain login failed:', error)
     throw error
   }
 }
@@ -48,7 +54,7 @@ export async function exampleAiohaAuth() {
   try {
     await client.loginWithHive({
       hiveName: 'your-hive-username',
-      provider: 'aioha',
+      provider: 'keychain',
       aiohaConfig,
     })
 
@@ -71,37 +77,9 @@ export async function exampleAiohaAuth() {
 }
 
 /**
- * Example: Using direct key authentication (for testing/development)
+ * Example: Using Aioha with HiveAuth provider (modern web3 auth)
  */
-export async function exampleDirectKeyAuth() {
-  const client = new vClient({
-    api: 'https://api.vsc.eco',
-    loginType: 'hive',
-  })
-
-  try {
-    await client.loginWithHive({
-      hiveName: 'your-hive-username',
-      provider: 'direct',
-      posting: 'your-posting-key', // Be careful with private keys!
-      active: 'your-active-key', // Only use in secure environments
-    })
-
-    console.log('Logged in with direct keys:', client.loginInfo.id)
-    console.log('Provider:', client.loginInfo.provider)
-
-    return client
-  } catch (error) {
-    console.error('Direct key login failed:', error)
-    throw error
-  }
-}
-
-/**
- * Example: Switching between authentication methods
- */
-export async function exampleSwitchAuthMethods() {
-  // Start with Aioha
+export async function exampleAiohaHiveAuth() {
   const client = new vClient({
     api: 'https://api.vsc.eco',
     loginType: 'hive',
@@ -109,7 +87,45 @@ export async function exampleSwitchAuthMethods() {
 
   const aiohaConfig: AiohaConfig = {
     appName: 'VSC Client',
-    appDescription: 'VSC Network Client',
+    appDescription: 'VSC Network Client with HiveAuth Support',
+    appIcon: 'https://avatars.githubusercontent.com/u/133249767',
+  }
+
+  try {
+    await client.loginWithHive({
+      hiveName: 'your-hive-username',
+      provider: 'hiveauth',
+      aiohaConfig,
+      options: {
+        displayQr: (data: string) => {
+          console.log('QR Code data:', data)
+          // Display QR code to user
+        },
+      },
+    })
+
+    console.log('Logged in with Aioha (HiveAuth):', client.loginInfo.id)
+    console.log('Provider:', client.loginInfo.provider)
+
+    return client
+  } catch (error) {
+    console.error('Aioha HiveAuth login failed:', error)
+    throw error
+  }
+}
+
+/**
+ * Example: Trying different Aioha providers with fallback
+ */
+export async function exampleAiohaProviderFallback() {
+  const client = new vClient({
+    api: 'https://api.vsc.eco',
+    loginType: 'hive',
+  })
+
+  const aiohaConfig: AiohaConfig = {
+    appName: 'VSC Client',
+    appDescription: 'VSC Network Client with Provider Fallback',
     hivesigner: {
       app: 'vsc.client',
       callbackURL: 'https://your-app.com/callback',
@@ -117,41 +133,32 @@ export async function exampleSwitchAuthMethods() {
     },
   }
 
-  try {
-    // First try Aioha
-    await client.loginWithHive({
-      hiveName: 'your-hive-username',
-      provider: 'aioha',
-      aiohaConfig,
-    })
+  const providers: Array<'keychain' | 'hivesigner' | 'hiveauth' | 'ledger' | 'peakvault'> = [
+    'keychain',
+    'hivesigner',
+    'hiveauth',
+  ]
 
-    console.log('Successfully logged in with Aioha')
-
-    // You can check which provider is active
-    if (client.loginInfo.provider === 'aioha') {
-      console.log('Using Aioha authentication')
-      console.log('Aioha user:', client.getAiohaUser())
-      console.log('Is Aioha logged in:', client.isAiohaLoggedIn())
-    }
-
-    return client
-  } catch (aiohaError) {
-    console.log('Aioha failed, falling back to KeychainSDK')
-
+  for (const provider of providers) {
     try {
-      // Fallback to KeychainSDK
       await client.loginWithHive({
         hiveName: 'your-hive-username',
-        provider: 'hive_keychain',
+        provider,
+        aiohaConfig,
       })
 
-      console.log('Successfully logged in with KeychainSDK')
+      console.log(`Successfully logged in with Aioha (${provider})`)
+      console.log('Aioha user:', client.getAiohaUser())
+      console.log('Is Aioha logged in:', client.isAiohaLoggedIn())
+
       return client
-    } catch (keychainError) {
-      console.error('Both authentication methods failed')
-      throw new Error(`Aioha failed: ${aiohaError}, KeychainSDK failed: ${keychainError}`)
+    } catch (error) {
+      console.log(`Aioha ${provider} failed, trying next provider...`)
+      console.error(`${provider} error:`, error)
     }
   }
+
+  throw new Error('All Aioha providers failed')
 }
 
 /**
@@ -170,7 +177,7 @@ export async function exampleAiohaAdvanced() {
 
   await client.loginWithHive({
     hiveName: 'your-hive-username',
-    provider: 'aioha',
+    provider: 'keychain', // or any other Aioha provider
     aiohaConfig,
   })
 

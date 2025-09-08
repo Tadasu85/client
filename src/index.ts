@@ -1,6 +1,5 @@
 import { DID } from 'dids'
-import { Client as HiveClient, PrivateKey } from '@hiveio/dhive'
-import { KeychainSDK } from 'keychain-sdk'
+import { Client as HiveClient } from '@hiveio/dhive'
 import { encodePayload } from 'dag-jose-utils'
 import Axios from 'axios'
 import { submitTxQuery } from './queries'
@@ -86,48 +85,28 @@ export class vTransaction {
       throw new Error('No TX specified!')
     }
     if (client.loginInfo.type === 'hive') {
-      if (client.loginInfo.provider === 'aioha' && client._aioha) {
-        // Use Aioha for signing and broadcasting
-        const txData: TransactionContainerV2 = {
-          __v: '0.2',
-          __t: 'vsc-tx',
-          headers: {
-            type: TransactionDbType.input,
-            required_auths: [client.hiveName],
-          },
-          tx: this.txData,
-        }
+      if (!client._aioha) {
+        throw new Error('Aioha not initialized. Please login first.')
+      }
 
-        const result = await client._aioha.signCustomJSON('posting', 'vsc-tx', txData)
-        if (!result.success) {
-          throw new Error(`Aioha signing failed: ${result.error}`)
-        }
+      // Use Aioha for signing and broadcasting
+      const txData: TransactionContainerV2 = {
+        __v: '0.2',
+        __t: 'vsc-tx',
+        headers: {
+          type: TransactionDbType.input,
+          required_auths: [client.hiveName],
+        },
+        tx: this.txData,
+      }
 
-        return {
-          id: result.result || null,
-        }
-      } else if (
-        client.loginInfo.provider === 'keychain' ||
-        client.loginInfo.provider === 'direct'
-      ) {
-        // Use traditional KeychainSDK or direct key approach
-        await hiveClient.broadcast.json(
-          {
-            id: 'vsc-tx',
-            required_auths: [client.hiveName],
-            required_posting_auths: [],
-            json: JSON.stringify({
-              __t: 'vsc-tx',
-              __v: '0.1',
-              net_id: 'vsc-mainnet',
-              headers: {},
-              tx: this.txData,
-            }),
-          },
-          PrivateKey.fromString(client.secrets.active || client.secrets.posting),
-        )
-      } else {
-        throw new Error('No valid Hive authentication method available')
+      const result = await client._aioha.signCustomJSON('posting', 'vsc-tx', txData)
+      if (!result.success) {
+        throw new Error(`Aioha signing failed: ${result.error}`)
+      }
+
+      return {
+        id: result.result || null,
       }
     } else if (client.loginInfo.type === 'offchain') {
       if (!this.cachedNonce) {
@@ -287,11 +266,6 @@ export class vClient {
   loggedIn: boolean
   _args: vClientArgs
   _did: DID
-  secrets: {
-    posting?: string
-    active?: string
-  }
-  _keychain: KeychainSDK | null
   _aioha: AiohaHiveSigner | null
   hiveName: string
   web3: Web3
@@ -299,14 +273,12 @@ export class vClient {
     wallet?: Web3BaseWalletAccount
     id: any
     type: any
-    provider?: 'keychain' | 'aioha' | 'direct'
+    provider?: 'aioha'
   }
 
   constructor(args: vClientArgs) {
     this.loggedIn = false
     this._args = args
-    this.secrets = {}
-    this._keychain = null
     this._aioha = null
 
     this.loginInfo = {
@@ -331,38 +303,30 @@ export class vClient {
 
   async loginWithHive(args: {
     hiveName: string
-    provider: 'hive_keychain' | 'aioha' | 'direct'
-    posting?: string
-    active?: string
-    aiohaConfig?: AiohaConfig
-  }) {
-    if (args.provider === 'hive_keychain') {
-      if (!(window as any).hive_keychain) {
-        throw new Error('Hive keychain not available')
-      }
-      this._keychain = new KeychainSDK(window)
-      this.loginInfo.provider = 'keychain'
-      this.loggedIn = true
-    } else if (args.provider === 'aioha') {
-      if (!args.aiohaConfig) {
-        throw new Error('Aioha configuration is required when using Aioha provider')
-      }
-      this._aioha = new AiohaHiveSigner(args.aiohaConfig)
-      this.loginInfo.provider = 'aioha'
-      this.loggedIn = true
-    } else if (args.provider === 'direct') {
-      if (!args.posting && !args.active) {
-        throw new Error('Missing posting or active key')
-      }
-      this.secrets.posting = args.posting
-      this.secrets.active = args.active
-      this.loginInfo.provider = 'direct'
-      this.loggedIn = true
-    } else {
-      throw new Error('Invalid Provider')
+    provider: 'keychain' | 'hivesigner' | 'hiveauth' | 'ledger' | 'peakvault' | 'custom'
+    aiohaConfig: AiohaConfig
+    options?: {
+      msg?: string
+      keyType?: any
+      displayQr?: (data: string) => void
     }
+  }) {
+    if (!args.aiohaConfig) {
+      throw new Error('Aioha configuration is required')
+    }
+
+    this._aioha = new AiohaHiveSigner(args.aiohaConfig)
+
+    const loginResult = await this._aioha.login(args.provider, args.hiveName, args.options)
+
+    if (!loginResult.success) {
+      throw new Error(`Aioha login failed: ${loginResult.error}`)
+    }
+
+    this.loginInfo.provider = 'aioha'
     this.loginInfo.id = args.hiveName
     this.loginInfo.type = 'hive'
+    this.loggedIn = true
   }
 
   async loginWithETH(web3: Web3, address, secret) {

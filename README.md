@@ -39,35 +39,15 @@ The project includes comprehensive test suites for all authentication methods an
 
 ## Hive Authentication
 
-The VSC client now supports both traditional and modern Hive authentication methods:
+The VSC client uses Aioha for unified Hive authentication, supporting multiple providers:
 
-### KeychainSDK (Traditional)
-```typescript
-import { vClient } from '@vsc.eco/client'
-
-const client = new vClient({
-  api: 'https://api.vsc.eco',
-  loginType: 'hive'
-})
-
-await client.loginWithHive({
-  hiveName: 'your-username',
-  provider: 'hive_keychain'
-})
-```
-
-### Aioha (Modern)
+### Aioha with Keychain Provider
 ```typescript
 import { vClient, type AiohaConfig } from '@vsc.eco/client'
 
 const aiohaConfig: AiohaConfig = {
   appName: "VSC Client",
-  appDescription: "VSC Network Client with Aioha Support",
-  hivesigner: {
-    app: 'vsc.client',
-    callbackURL: 'https://your-app.com/callback',
-    scope: ['login', 'vote', 'comment', 'transfer']
-  }
+  appDescription: "VSC Network Client with Keychain Support"
 }
 
 const client = new vClient({
@@ -77,20 +57,43 @@ const client = new vClient({
 
 await client.loginWithHive({
   hiveName: 'your-username',
-  provider: 'aioha',
+  provider: 'keychain',
   aiohaConfig
 })
 ```
 
-### Direct Keys (Development/Testing)
+### Aioha with HiveAuth Provider (Modern Web3)
 ```typescript
+import { vClient, type AiohaConfig } from '@vsc.eco/client'
+
+const aiohaConfig: AiohaConfig = {
+  appName: "VSC Client",
+  appDescription: "VSC Network Client with HiveAuth Support",
+  appIcon: "https://your-app-icon.com/icon.png"
+}
+
+const client = new vClient({
+  api: 'https://api.vsc.eco',
+  loginType: 'hive'
+})
+
 await client.loginWithHive({
   hiveName: 'your-username',
-  provider: 'direct',
-  posting: 'your-posting-key',
-  active: 'your-active-key'
+  provider: 'hiveauth',
+  aiohaConfig,
+  options: {
+    displayQr: (data) => console.log('QR Code:', data)
+  }
 })
 ```
+
+### Supported Aioha Providers
+- `keychain` - Traditional Hive Keychain
+- `hivesigner` - HiveSigner integration
+- `hiveauth` - Modern web3 authentication
+- `ledger` - Ledger hardware wallet
+- `peakvault` - PeakVault wallet
+- `custom` - Custom provider
 
 ## Examples
 
