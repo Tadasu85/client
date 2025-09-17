@@ -157,7 +157,11 @@ function convertJsTypeToTypedData(
   }
 }
 
-export function convertEIP712Type(a: Record<string, unknown>, type = 'tx_container_v0') {
+export function convertEIP712Type(
+  a: Record<string, unknown>,
+  type = 'tx_container_v0',
+  networkName = 'vsc.network',
+) {
   const typedDataPartial = convertJsTypeToTypedData(a, type)
 
   const obj: Record<string, unknown> = {}
@@ -174,7 +178,7 @@ export function convertEIP712Type(a: Record<string, unknown>, type = 'tx_contain
     primaryType: type,
     message: a,
     domain: {
-      name: 'vsc.network',
+      name: networkName,
     },
   }
   return out

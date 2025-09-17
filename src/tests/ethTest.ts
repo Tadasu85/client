@@ -31,7 +31,7 @@ const coreSecret = '44ab29dc82f227322cb924cdc66815da8edc9cb0b409f5ced26ced57e607
         // const act = provider.wallet.add(secret)
 
         console.log(secret)
-        const account = provider.accountProvider.privateKeyToAccount(`0x${secret}`)
+        const account = provider.eth.accounts.privateKeyToAccount(`0x${secret}`)
         const addr = account.address
 
         console.log(addr)

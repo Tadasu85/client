@@ -3,7 +3,7 @@ import { Client as HiveClient } from '@hiveio/dhive'
 import { encodePayload } from 'dag-jose-utils'
 import Axios from 'axios'
 import { submitTxQuery } from './queries'
-import { TransactionContainerV2, TransactionDbType, EIP712TypedData } from './types'
+import { TransactionContainerV2, EIP712TypedData } from './types'
 import { base64UrlToUint8Array, convertEIP712Type, getNonce, uint8ArrayToBase64Url } from './utils'
 import Web3, { Web3BaseWalletAccount } from 'web3'
 import { hashTypedData, recoverTypedDataAddress, recoverAddress } from 'viem'
@@ -94,7 +94,6 @@ export class vTransaction {
         __v: '0.2',
         __t: 'vsc-tx',
         headers: {
-          type: TransactionDbType.input,
           required_auths: [client.hiveName],
         },
         tx: this.txData,
@@ -117,13 +116,16 @@ export class vTransaction {
         __v: '0.2',
         __t: 'vsc-tx',
         headers: {
-          type: TransactionDbType.input,
           nonce: this.cachedNonce,
           required_auths: [client._did.id],
         },
         tx: this.txData,
       }
-      const types = convertEIP712Type(txData as unknown as Record<string, unknown>)
+      const types = convertEIP712Type(
+        txData as unknown as Record<string, unknown>,
+        'tx_container_v0',
+        client._args.network || 'vsc.network',
+      )
 
       this.cachedNonce = this.cachedNonce + 1
 
@@ -176,7 +178,7 @@ export class vTransaction {
         }
       }
     } else if (client.loginInfo.type === 'evm') {
-      const did = `did:pkh:eip155:1${client.loginInfo.id}`
+      const did = `did:pkh:eip155:1:${client.loginInfo.id}`
       if (!this.cachedNonce) {
         this.cachedNonce = await getNonce(did, `${client._args.api}/api/v1/graphql`)
       }
@@ -184,13 +186,16 @@ export class vTransaction {
         __v: '0.2',
         __t: 'vsc-tx',
         headers: {
-          type: TransactionDbType.input,
           nonce: this.cachedNonce,
           required_auths: [`did:pkh:eip155:1:${client.loginInfo.id}`],
         },
         tx: this.txData,
       }
-      const types = convertEIP712Type(decode(encode(txData)) as unknown as Record<string, unknown>)
+      const types = convertEIP712Type(
+        decode(encode(txData)) as unknown as Record<string, unknown>,
+        'tx_container_v0',
+        client._args.network || 'vsc.network',
+      )
 
       console.log(types)
       const hash = hashTypedData(types as EIP712TypedData)
@@ -260,6 +265,11 @@ export interface vClientArgs {
    * VSC API
    */
   api: string
+
+  /**
+   * Optional network identifier (e.g., 'vsc-mainnet', 'vsc-testnet', 'mocknet')
+   */
+  network?: string
 }
 
 export class vClient {

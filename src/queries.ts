@@ -6,10 +6,10 @@ query SubmitTx($sig: String!, $tx: String!) {
 }
 `
 
-export const getNonce = `
-qeury GetNonce($keyGroup: [String]) {
-    getAccountNonce(keyGroup: $keyGroup) {
-        nonce
-    }
+export const getNonceQuery = `
+query GetNonce($keyGroup: String!) {
+  getAccountNonce(keyGroup: $keyGroup) {
+    nonce
+  }
 }
 `
