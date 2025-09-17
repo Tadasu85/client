@@ -93,9 +93,7 @@ export class vTransaction {
       const txData: TransactionContainerV2 = {
         __v: '0.2',
         __t: 'vsc-tx',
-        headers: {
-          required_auths: [client.hiveName],
-        },
+        headers: {},
         tx: this.txData,
       }
 
@@ -117,7 +115,6 @@ export class vTransaction {
         __t: 'vsc-tx',
         headers: {
           nonce: this.cachedNonce,
-          required_auths: [client._did.id],
         },
         tx: this.txData,
       }
@@ -187,7 +184,6 @@ export class vTransaction {
         __t: 'vsc-tx',
         headers: {
           nonce: this.cachedNonce,
-          required_auths: [`did:pkh:eip155:1:${client.loginInfo.id}`],
         },
         tx: this.txData,
       }

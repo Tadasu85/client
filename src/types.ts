@@ -1,7 +1,3 @@
-export enum TransactionIntent {
-  'money.spend' = 'money.spend',
-}
-
 export interface SignatureContainer {
   __t: 'vsc-sig'
   sigs: Array<{
@@ -29,7 +25,6 @@ export interface TransactionContainerV2 {
   __v: '0.2'
   headers: {
     nonce?: number
-    required_auths: Array<string>
   }
   tx: {
     contract_id?: string
