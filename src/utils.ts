@@ -160,7 +160,7 @@ function convertJsTypeToTypedData(
 export function convertEIP712Type(
   a: Record<string, unknown>,
   type = 'tx_container_v0',
-  networkName = 'vsc.network',
+  networkName = 'vsc-mainnet',
 ) {
   const typedDataPartial = convertJsTypeToTypedData(a, type)
 
